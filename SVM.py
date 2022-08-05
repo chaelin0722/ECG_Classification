@@ -1,6 +1,11 @@
-from sklearn import svm
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+from sklearn import svm, datasets
+
+
 
 iris_dataset = load_iris()
 X_train, X_test, y_train, y_test = train_test_split(iris_dataset['data'], iris_dataset['target'], test_size=0.2)
@@ -14,16 +19,35 @@ X_test = [[1.05, 0.165, 0.095], [0.5, 0.3, 0.07], [0.85, 0.17, 0.14], [0.45, 0.0
 
 
 #SVC
-model = svm.SVC()
+model = svm.SVC(kernel='linear')
 training = model.fit(X_train, y)
 svc_pred = training.predict(X_test)
+
+z = lambda x,y: (-clf.intercept_[0]-clf.coef_[0][0]*x -clf.coef_[0][1]*y) / clf.coef_[0][2]
+
+tmp = np.linspace(-5,5,30)
+x,y = np.meshgrid(tmp, tmp)
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot3D(X_train[Y==0,0], X_train[Y==0,1], X_train[Y==0,2], 'ob')
+ax.plot3D(X_train[Y==1,0], X_train[Y==1,1], X_train[Y==1,2], 'sr')
+ax.plot_surface(x, y, z(x,y))
+ax.view_init(30,60)
+plt.show()
+
+
+
 
 # SVR
 model = svm.SVR()
 training = model.fit(X_train, y)
 svr_pred = training.predict(X_test)
 
-print(svc_pred)
+# linear
+
+
+#print(svc_pred)
 # [0 0 0 0 0]
-print(svr_pred)
+#print(svr_pred)
 # [0.09698539 0.63831015 0.12090382 0.70783655 0.31277177]
