@@ -1,8 +1,13 @@
-import numpy
+import pandas as pd
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+from matplotlib.colors import ListedColormap
+##https://xavierbourretsicotte.github.io/AdaBoost.html
 '''
 #generate normal sample data
 n_sample_att1 = np.random.uniform(low=0.6,high=1.2, size=100)
@@ -45,25 +50,87 @@ X_train = np.concatenate((X_train_a, X_train_n), axis=0)
 Y_n=np.zeros(100)
 Y_a=np.ones(100)
 Y = np.concatenate((Y_a, Y_n), axis=0)
-'''
 
-X_train = [[0.9, 0.16, 0.1], [0.8, 0.14, 0.09], [1.2,0.18,0.11], [1.0, 0.13, 0.12],
-           [0.6, 0.2, 0.11], [1.8, 0.3, 0.18], [0.35, 0.08, 0.05], [1.7, 0.09, 0.17],
-           [0.4, 0.25, 0.06], [1.5, 0.28, 0.04]]
+'''
+# x1 = rr, x2 = pr, x3 = st
+## rr, st
+X_train = [[0.9,  0.1], [0.8, 0.09], [1.2,0.11], [1.0, 0.12],
+           [0.6, 0.11], [1.8, 0.18], [0.35, 0.05], [1.7, 0.17],
+           [0.4, 0.06], [1.5, 0.04]]
+## pr, st
+'''
+X_train = [[0.16, 0.1], [0.14, 0.09], [0.18,0.11], [0.13, 0.12],
+           [0.2, 0.11], [0.3, 0.18], [0.08, 0.05], [0.09, 0.17],
+           [0.25, 0.06], [0.28, 0.04]]
+'''
+'''
+## rr, pr
+X_train = [[0.9, 0.1], [0.8, 0.14], [1.2,0.18], [1.0, 0.13],
+           [0.6, 0.2], [1.8, 0.3], [0.35, 0.08], [1.7, 0.09],
+           [0.4, 0.25], [1.5, 0.28]]
+           '''
 Y = [0,0,0,0,0,1,1,1,1,1]
 
-X_test = [[1.05, 0.165, 0.095], [0.5, 0.3, 0.07], [0.85, 0.17, 0.14], [0.45, 0.085, 0.096], [0.7, 0.28, 0.085]]
+data = pd.DataFrame({'RR':[0.9, 0.8, 1.2, 1.0, 0.6, 1.8, 0.35, 1.7, 0.4, 1.5] ,
+                     'PR':[0.1, 0.14, 0.18, 0.13, 0.2, 0.3, 0.08, 0.09, 0.25, 0.28],
+                     'class':['normal','normal','normal','normal','normal', 'abnormal', 'abnormal', 'abnormal', 'abnormal', 'abnormal']})
+
+X_test = [[1.05, 0.165], [0.5, 0.3], [0.85, 0.17], [0.45, 0.085], [0.7, 0.28]]
 
 Y_test = [0,1,1,1,1]
 
-X = X_train
+#X = X_train
 X = np.array(X_train)
 Y = np.array(Y)
 X_test = np.array(X_test)
 Y_test = np.array(Y_test)
 
+
+def plot_decision_boundary(classifier, X, y, N=10, scatter_weights=np.ones(len(Y)), ax=None):
+    '''Utility function to plot decision boundary and scatter plot of data'''
+    x_min, x_max = X[:, 0].min() - .1, X[:, 0].max() + .1
+    y_min, y_max = X[:, 1].min() - .1, X[:, 1].max() + .1
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, N), np.linspace(y_min, y_max, N))
+
+    # Check what methods are available
+    if hasattr(classifier, "decision_function"):
+        zz = np.array([classifier.decision_function(np.array([xi, yi]).reshape(1, -1)) for xi, yi in
+                       zip(np.ravel(xx), np.ravel(yy))])
+    elif hasattr(classifier, "predict_proba"):
+        zz = np.array([classifier.predict_proba(np.array([xi, yi]).reshape(1, -1))[:, 1] for xi, yi in
+                       zip(np.ravel(xx), np.ravel(yy))])
+    else:
+        zz = np.array([classifier(np.array([xi, yi]).reshape(1, -1)) for xi, yi in zip(np.ravel(xx), np.ravel(yy))])
+
+    # reshape result and plot
+    Z = zz.reshape(xx.shape)
+    cm_bright = ListedColormap(['#FF0000', '#0000FF'])
+
+    # Get current axis and plot
+    if ax is None:
+        ax = plt.gca()
+    ax.contourf(xx, yy, Z, 2, cmap='RdBu', alpha=.5)
+    ax.contour(xx, yy, Z, 2, cmap='RdBu')
+    ax.scatter(X[:, 0], X[:, 1], c=y, cmap=cm_bright, s=scatter_weights * 40)
+    ax.set_xlabel('$RR$')
+    ax.set_ylabel('$ST$')
+
+
+
+base_estimator = DecisionTreeClassifier(max_depth=1, random_state=0)
+adaboost = AdaBoostClassifier(base_estimator=base_estimator,
+                              n_estimators=200, algorithm="SAMME",
+                              random_state=0)
+adaboost.fit(X,Y)
+preds = adaboost.predict(X_test)
+
 clf = AdaBoostClassifier()
 clf.fit(X, Y)
-preds = clf.predict(X_test)
+
+plot_decision_boundary(adaboost, X, Y, N = 50)#, weights)
+plt.show()
+
+score = clf.score(X_test,Y_test)
+#preds = clf.predict(X_test)
 
 print("results : ",preds)
